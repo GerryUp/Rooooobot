@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>预约发货</title>
+  <style>
+    :root {
+      --teal: #83cfd9;
+      --teal-dark: #5eb8c4;
+      --text: #303133;
+      --label: #606266;
+      --muted: #909399;
+      --placeholder: #c0c4cc;
+      --line: #e8eaec;
+      --border: #dcdfe6;
+      --pink: #fd89a4;
+      --header: #f8f8f9;
+      --page: #f0f2f5;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      background: var(--page);
+      color: var(--text);
+      font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "WenQuanYi Micro Hei", "Droid Sans Fallback", sans-serif;
+      font-size: 13px;
+      line-height: 1.4;
+    }
+    button, input, select { font-family: inherit; font-size: 13px; }
+    .site-nav {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      padding: 10px 16px 0;
+    }
+    .site-nav a {
+      color: var(--label);
+      text-decoration: none;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 2px;
+      padding: 6px 14px;
+      font-size: 13px;
+    }
+    .site-nav a.current,
+    .site-nav a:hover {
+      background: var(--teal);
+      border-color: var(--teal);
+      color: #fff;
+    }
+    .page {
+      background: #fff;
+      min-height: calc(100vh - 52px);
+      margin: 10px;
+      padding: 14px 16px 56px;
+      min-width: 1180px;
+    }
+    h1 {
+      margin: 2px 0 16px;
+      text-align: center;
+      font-size: 16px;
+      font-weight: 500;
+      color: var(--text);
+      letter-spacing: 0.5px;
+    }
+    .sec { margin: 0 0 2px; }
+    .sec-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 2px;
+      border: 0;
+      background: transparent;
+      color: var(--text);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+    .sec-toggle:hover { color: #1f2329; }
+    .chev { display: block; transition: transform .15s ease; }
+    .sec-toggle[aria-expanded="false"] .chev { transform: rotate(-90deg); }
+    .sec-body { padding: 2px 0 8px; }
+    .basic {
+      display: grid;
+      grid-template-columns: 168px minmax(0, 1fr);
+      align-items: center;
+      padding: 4px 0 8px;
+    }
+    .avatar {
+      width: 72px;
+      height: 72px;
+      display: block;
+      justify-self: start;
+      margin-left: 2px;
+    }
+    .fields {
+      display: grid;
+      grid-template-columns: 0.95fr 1.05fr 1.4fr 1.15fr;
+      column-gap: 18px;
+      row-gap: 18px;
+      align-items: center;
+    }
+    .field {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 32px;
+      min-width: 0;
+    }
+    .lab { color: var(--label); white-space: nowrap; flex: none; }
+    .val { color: var(--text); white-space: nowrap; }
+    .star { color: var(--pink); font-style: normal; margin-right: 2px; }
+    .link {
+      color: var(--teal);
+      text-decoration: none;
+      cursor: pointer;
+    }
+    .link:hover { color: var(--teal-dark); }
+    .radios { display: inline-flex; align-items: center; gap: 16px; }
+    .radio {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      color: var(--label);
+      cursor: pointer;
+      user-select: none;
+    }
+    .radio input {
+      appearance: none;
+      width: 14px;
+      height: 14px;
+      margin: 0;
+      border: 1px solid #d5d8de;
+      border-radius: 50%;
+      background: #fff;
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+    }
+    .radio input:checked { border-color: var(--teal); }
+    .radio input:checked::after {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--teal);
+    }
+    .combo { position: relative; display: inline-flex; align-items: center; }
+    .combo-ico {
+      position: absolute;
+      left: 8px;
+      pointer-events: none;
+      color: var(--placeholder);
+    }
+    .ctl, .sel {
+      height: 32px;
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      background: #fff;
+      color: var(--label);
+      outline: none;
+      padding: 0 8px;
+    }
+    .ctl { width: 168px; }
+    .ctl.date { width: 118px; padding-left: 28px; color: var(--label); }
+    .ctl.date:not(.has-value) { color: transparent; }
+    .ctl.time {
+      width: 104px;
+      padding-left: 28px;
+      padding-right: 22px;
+      appearance: none;
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path d='M1 1l4 4 4-4' fill='none' stroke='%23c0c4cc' stroke-width='1.2'/></svg>");
+      background-repeat: no-repeat;
+      background-position: right 8px center;
+    }
+    .ctl.time.is-placeholder { color: var(--placeholder); }
+    .sel {
+      width: 168px;
+      padding-right: 26px;
+      appearance: none;
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path d='M1 1l4 4 4-4' fill='none' stroke='%23c0c4cc' stroke-width='1.2'/></svg>");
+      background-repeat: no-repeat;
+      background-position: right 8px center;
+      cursor: pointer;
+    }
+    .ctl:focus, .sel:focus { border-color: var(--teal); }
+    .ctl::placeholder { color: var(--placeholder); }
+    .logi { padding: 6px 0 2px 2px; }
+    .logi-row {
+      display: flex;
+      align-items: center;
+      gap: 22px;
+      flex-wrap: wrap;
+      padding: 4px 0;
+    }
+    .way { width: 200px; }
+    .company { width: 188px; }
+    .waybill { width: 280px; }
+    .attach-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 0 4px;
+      color: var(--label);
+    }
+    .file-btn {
+      color: var(--teal);
+      cursor: pointer;
+      background: none;
+      border: 0;
+      padding: 0;
+      font-size: 13px;
+    }
+    .file-btn:hover { color: var(--teal-dark); }
+    .file-name {
+      color: var(--muted);
+      max-width: 280px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 6px 0 8px;
+      padding-left: 2px;
+    }
+    .toolbar-left { display: flex; align-items: center; gap: 8px; flex: none; }
+    .batch-lab { color: var(--label); white-space: nowrap; }
+    .batch-num { width: 168px; text-align: left; }
+    input[type="number"]::-webkit-outer-spin-button,
+    input[type="number"]::-webkit-inner-spin-button { appearance: none; margin: 0; }
+    input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
+    .btn {
+      height: 32px;
+      padding: 0 14px;
+      border: 0;
+      border-radius: 2px;
+      background: var(--teal);
+      color: #fff;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .btn:hover { background: var(--teal-dark); }
+    .btn:active { background: #4eacb8; }
+    .summary {
+      flex: 1;
+      text-align: center;
+      color: var(--pink);
+      font-size: 14px;
+      white-space: nowrap;
+    }
+    .grid-btn {
+      flex: none;
+      width: 28px;
+      height: 28px;
+      border: 0;
+      background: transparent;
+      padding: 0;
+      cursor: pointer;
+      color: #3a3a3c;
+      display: grid;
+      place-items: center;
+    }
+    .grid-btn:hover { color: #000; }
+    .table-wrap { overflow-x: auto; padding-bottom: 4px; }
+    table {
+      border-collapse: collapse;
+      min-width: max-content;
+      font-size: 12px;
+      color: var(--label);
+      font-variant-numeric: tabular-nums;
+    }
+    th, td {
+      border: 1px solid var(--line);
+      padding: 0 8px;
+      height: 40px;
+      font-weight: 400;
+      text-align: center;
+      white-space: nowrap;
+    }
+    thead th {
+      background: var(--header);
+      color: #606266;
+      height: 36px;
+      font-size: 12px;
+    }
+    th.left, td.left { text-align: left; }
+    td.sku { color: #4a4d52; padding-left: 10px; }
+    .color-cell {
+      text-align: left;
+      padding-left: 12px;
+      line-height: 1.45;
+      color: #606266;
+      vertical-align: middle;
+    }
+    .color-name { display: block; }
+    .skc { display: block; }
+    .box-h {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+    }
+    .tip {
+      display: inline-flex;
+      vertical-align: middle;
+      margin-left: 2px;
+      cursor: help;
+    }
+    .qty {
+      width: 84px;
+      height: 28px;
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      text-align: center;
+      color: var(--label);
+      background: #fff;
+      padding: 0 4px;
+      font-size: 12px;
+    }
+    .qty::placeholder { color: var(--placeholder); }
+    .qty:focus { outline: none; border-color: var(--teal); }
+    tr.foot td { background: #fafbfc; height: 38px; }
+    .foot-lab { text-align: right; padding-right: 14px; color: #606266; }
+    .std-no { color: var(--pink); }
+  </style>
+</head>
+<body>
+  <nav class="site-nav">
+    <a href="index.html" class="current">预约发货</a>
+    <a href="order.html">查看下单信息</a>
+  </nav>
+  <div class="page">
+    <h1>预约发货</h1>
+
+    <section class="sec">
+      <button type="button" class="sec-toggle" aria-expanded="true" aria-controls="basic-body">
+        <svg class="chev" width="12" height="12" viewBox="0 0 12 12" aria-hidden="true">
+          <path d="M2.2 4.1L6 7.9l3.8-3.8" fill="none" stroke="#83cfd9" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        基本信息
+      </button>
+      <div class="sec-body" id="basic-body">
+        <div class="basic">
+          <img class="avatar" alt="" src="data:image/png;base64,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">
+          <div class="fields">
+            <div class="field">
+              <span class="lab">发货单号</span>
+              <span class="val">自动生成</span>
+            </div>
+            <div class="field">
+              <span class="lab">采购订单</span>
+              <a class="link" href="order.html" id="poLink">PO2607140011</a>
+            </div>
+            <div class="field">
+              <span class="lab">款号</span>
+              <span class="val">WCMUT0001</span>
+            </div>
+            <div class="field">
+              <span class="lab">仓库</span>
+              <span class="val">义乌仓</span>
+            </div>
+
+            <div class="field">
+              <span class="lab"><i class="star">*</i>是否拍摄样发货</span>
+              <span class="radios">
+                <label class="radio"><input type="radio" name="shootSample" value="yes">是</label>
+                <label class="radio"><input type="radio" name="shootSample" value="no">否</label>
+              </span>
+            </div>
+            <div class="field">
+              <span class="lab"><i class="star">*</i>是否紧急调度发货</span>
+              <span class="radios">
+                <label class="radio"><input type="radio" name="urgent" value="yes">是</label>
+                <label class="radio"><input type="radio" name="urgent" value="no">否</label>
+              </span>
+            </div>
+            <div class="field">
+              <span class="lab"><i class="star">*</i>预约送达时间</span>
+              <span class="combo">
+                <svg class="combo-ico" width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
+                  <rect x="1.4" y="2.2" width="11.2" height="10" rx="1" fill="none" stroke="currentColor" stroke-width="1.1"/>
+                  <path d="M1.4 5.2h11.2M4.2 1.2v2.2M9.8 1.2v2.2" fill="none" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+                </svg>
+                <input class="ctl date" id="arriveDate" type="text" placeholder="日期" autocomplete="off" aria-label="预约送达日期">
+              </span>
+              <span class="combo">
+                <svg class="combo-ico" width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
+                  <circle cx="7" cy="7" r="5.2" fill="none" stroke="currentColor" stroke-width="1.1"/>
+                  <path d="M7 4.1V7l2 1.4" fill="none" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <select class="ctl time is-placeholder" id="arriveTime" aria-label="预约送达时间"></select>
+              </span>
+            </div>
+            <div class="field">
+              <span class="lab">预报日期</span>
+              <span class="val">2026-10-28 10:42:16</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="sec">
+      <button type="button" class="sec-toggle" aria-expanded="true" aria-controls="logi-body">
+        <svg class="chev" width="12" height="12" viewBox="0 0 12 12" aria-hidden="true">
+          <path d="M2.2 4.1L6 7.9l3.8-3.8" fill="none" stroke="#83cfd9" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        物流信息
+      </button>
+      <div class="sec-body" id="logi-body">
+        <div class="logi">
+          <div class="logi-row">
+            <div class="field">
+              <span class="lab"><i class="star">*</i>运输方式</span>
+              <select class="sel way" id="shipMode" aria-label="运输方式">
+                <option value="第三方物流" selected>第三方物流</option>
+                <option value="自送">自送</option>
+                <option value="快递物流">快递物流</option>
+                <option value="仓库自提">仓库自提</option>
+              </select>
+            </div>
+            <div class="field">
+              <span class="lab">物流公司</span>
+              <input class="ctl company" id="carrier" type="text" placeholder="物流公司" autocomplete="off">
+            </div>
+            <div class="field">
+              <span class="lab">运单号</span>
+              <input class="ctl waybill" id="tracking" type="text" placeholder="运单号" autocomplete="off">
+            </div>
+          </div>
+          <div class="attach-row">
+            <span>物流附件</span>
+            <label class="file-btn" for="attach">上传附件</label>
+            <input class="sr" id="attach" type="file">
+            <span class="file-name" id="fileName"></span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="sec">
+      <button type="button" class="sec-toggle" aria-expanded="true" aria-controls="detail-body">
+        <svg class="chev" width="12" height="12" viewBox="0 0 12 12" aria-hidden="true">
+          <path d="M2.2 4.1L6 7.9l3.8-3.8" fill="none" stroke="#83cfd9" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        发货明细
+      </button>
+      <div class="sec-body" id="detail-body">
+        <div class="toolbar">
+          <div class="toolbar-left">
+            <span class="batch-lab">批量新增箱数</span>
+            <input class="ctl batch-num" id="boxBatch" type="number" min="1" max="20" step="1" value="2" inputmode="numeric" aria-label="批量新增箱数">
+            <button type="button" class="btn" id="genBtn">生成箱列</button>
+          </div>
+          <div class="summary" id="summary" aria-live="polite">装箱总数：6箱/0件</div>
+          <button type="button" class="grid-btn" title="表格设置" aria-label="表格设置">
+            <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+              <rect x="1" y="1" width="6" height="6" rx="0.5" fill="currentColor"/>
+              <rect x="9" y="1" width="6" height="6" rx="0.5" fill="currentColor"/>
+              <rect x="1" y="9" width="6" height="6" rx="0.5" fill="currentColor"/>
+              <rect x="9" y="9" width="6" height="6" rx="0.5" fill="currentColor"/>
+            </svg>
+          </button>
+        </div>
+        <div class="table-wrap">
+          <table id="matrix">
+            <thead></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const SKUS = [
+      { sku: "WCMUT0001-BR-S", available: 2 },
+      { sku: "WCMUT0001-BR-M", available: 2 },
+      { sku: "WCMUT0001-BR-L", available: 2 },
+      { sku: "WCMUT0001-BR-XL", available: 2 },
+      { sku: "WCMUT0001-BR-XXL", available: 2 }
+    ];
+    const COLOR = "橙色";
+    const SKC = "WCMUT0001-BR";
+    const MIN_BOX = 1;
+    const MAX_BOX = 20;
+    const INITIAL_BOXES = 6;
+
+    const state = {
+      boxCount: INITIAL_BOXES,
+      qty: SKUS.map(() => Array(INITIAL_BOXES).fill(""))
+    };
+
+    const summaryEl = document.getElementById("summary");
+    const thead = document.querySelector("#matrix thead");
+    const tbody = document.querySelector("#matrix tbody");
+    const boxBatch = document.getElementById("boxBatch");
+
+    const TIP = '<svg width="13" height="13" viewBox="0 0 13 13" aria-hidden="true"><circle cx="6.5" cy="6.5" r="6" fill="#606060"/><text x="6.5" y="9.4" text-anchor="middle" font-size="8.5" font-family="sans-serif" fill="#fff">?</text></svg>';
+    const BOX_MORE = '<svg width="13" height="13" viewBox="0 0 13 13" aria-hidden="true"><circle cx="6.5" cy="6.5" r="5.2" fill="none" stroke="#fd89a4" stroke-width="1.1"/><path d="M5.4 4.1L8.2 6.5 5.4 8.9" fill="none" stroke="#fd89a4" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+    function pad(n) { return String(n).padStart(2, "0"); }
+
+    function fillTimeOptions() {
+      const sel = document.getElementById("arriveTime");
+      const frag = document.createDocumentFragment();
+      const blank = document.createElement("option");
+      blank.value = "";
+      blank.textContent = "时间";
+      frag.appendChild(blank);
+      for (let h = 0; h < 24; h++) {
+        for (const m of [0, 30]) {
+          const opt = document.createElement("option");
+          opt.value = pad(h) + ":" + pad(m);
+          opt.textContent = opt.value;
+          frag.appendChild(opt);
+        }
+      }
+      sel.appendChild(frag);
+      sel.addEventListener("change", () => {
+        sel.classList.toggle("is-placeholder", sel.value === "");
+      });
+    }
+
+    function skuBooked(i) {
+      return state.qty[i].reduce((sum, v) => sum + (parseInt(v, 10) || 0), 0);
+    }
+
+    function pieceTotal() {
+      return SKUS.reduce((sum, _, i) => sum + skuBooked(i), 0);
+    }
+
+    function updateTotals() {
+      summaryEl.textContent = "装箱总数：" + state.boxCount + "箱/" + pieceTotal() + "件";
+      SKUS.forEach((item, i) => {
+        const booked = skuBooked(i);
+        const bookedCell = document.getElementById("booked-" + i);
+        const diffCell = document.getElementById("diff-" + i);
+        const stdCell = document.getElementById("std-" + i);
+        if (!bookedCell) return;
+        bookedCell.textContent = String(booked);
+        if (booked === 0) {
+          diffCell.textContent = "-";
+          stdCell.textContent = "-";
+          stdCell.classList.remove("std-no");
+        } else {
+          diffCell.textContent = String(booked - item.available);
+          const ok = booked <= item.available;
+          stdCell.textContent = ok ? "是" : "否";
+          stdCell.classList.toggle("std-no", !ok);
+        }
+      });
+    }
+
+    function boxLabel(n) {
+      return "箱号" + pad(n);
+    }
+
+    function renderTable() {
+      const n = state.boxCount;
+      let head = "<tr>";
+      head += '<th class="left" style="min-width:118px">颜色/SKC</th>';
+      head += '<th class="left" style="min-width:148px">SKU</th>';
+      head += '<th style="min-width:72px">已发货数</th>';
+      head += '<th style="min-width:84px">可预约数<span class="tip" title="当前 SKU 还可预约的件数">' + TIP + "</span></th>";
+      head += '<th style="min-width:84px">本次预约数</th>';
+      head += '<th style="min-width:96px">发货差异数<span class="tip" title="本次预约数减去可预约数，未填写时为 -">' + TIP + "</span></th>";
+      head += '<th style="min-width:118px">是否达到发货标准</th>';
+      for (let b = 1; b <= n; b++) {
+        head += '<th style="min-width:102px"><span class="box-h"><i class="star">*</i>' + boxLabel(b) +
+          '<span class="tip" title="箱列">' + BOX_MORE + "</span></span></th>";
+      }
+      head += "</tr>";
+      thead.innerHTML = head;
+
+      let body = "";
+      SKUS.forEach((item, i) => {
+        body += "<tr>";
+        if (i === 0) {
+          body += '<td class="color-cell" rowspan="' + SKUS.length + '"><span class="color-name">' + COLOR +
+            '</span><span class="skc">' + SKC + "</span></td>";
+        }
+        body += '<td class="left sku">' + item.sku + "</td>";
+        body += "<td>-</td>";
+        body += "<td>" + item.available + "</td>";
+        body += '<td id="booked-' + i + '">0</td>';
+        body += '<td id="diff-' + i + '">-</td>';
+        body += '<td id="std-' + i + '">-</td>';
+        for (let b = 0; b < n; b++) {
+          const val = state.qty[i][b] || "";
+          body += '<td><input class="qty" inputmode="numeric" maxlength="6" placeholder="请输入" aria-label="' +
+            item.sku + " " + boxLabel(b + 1) + '" data-sku="' + i + '" data-box="' + b + '" value="' + val + '"></td>';
+        }
+        body += "</tr>";
+      });
+
+      body += '<tr class="foot"><td class="foot-lab" colspan="7">箱子重量(KG)</td>';
+      for (let b = 0; b < n; b++) body += "<td>21</td>";
+      body += "</tr>";
+      body += '<tr class="foot"><td class="foot-lab" colspan="7">箱规(长*宽*高)</td>';
+      for (let b = 0; b < n; b++) body += "<td>63*36*30</td>";
+      body += "</tr>";
+      tbody.innerHTML = body;
+      updateTotals();
+    }
+
+    function clampCount(raw) {
+      const n = parseInt(raw, 10);
+      if (!Number.isFinite(n)) return MIN_BOX;
+      return Math.min(MAX_BOX, Math.max(MIN_BOX, n));
+    }
+
+    function generateBoxes() {
+      const n = clampCount(boxBatch.value);
+      boxBatch.value = String(n);
+      state.qty.forEach((row) => {
+        if (row.length > n) row.length = n;
+        while (row.length < n) row.push("");
+      });
+      state.boxCount = n;
+      renderTable();
+    }
+
+    document.querySelectorAll(".sec-toggle").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const open = btn.getAttribute("aria-expanded") === "true";
+        btn.setAttribute("aria-expanded", open ? "false" : "true");
+        const body = document.getElementById(btn.getAttribute("aria-controls"));
+        body.hidden = open;
+      });
+    });
+
+    const dateInput = document.getElementById("arriveDate");
+    dateInput.addEventListener("focus", () => {
+      dateInput.type = "date";
+      dateInput.classList.add("has-value");
+      if (typeof dateInput.showPicker === "function") {
+        try { dateInput.showPicker(); } catch (err) { /* 部分浏览器需用户手势，忽略 */ }
+      }
+    });
+    dateInput.addEventListener("blur", () => {
+      if (!dateInput.value) {
+        dateInput.type = "text";
+        dateInput.classList.remove("has-value");
+      }
+    });
+    dateInput.addEventListener("change", () => {
+      dateInput.classList.toggle("has-value", Boolean(dateInput.value));
+    });
+
+    document.getElementById("attach").addEventListener("change", (e) => {
+      const file = e.target.files && e.target.files[0];
+      document.getElementById("fileName").textContent = file ? file.name : "";
+    });
+
+    document.getElementById("genBtn").addEventListener("click", generateBoxes);
+    boxBatch.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        generateBoxes();
+      }
+    });
+
+    document.getElementById("matrix").addEventListener("input", (e) => {
+      const el = e.target;
+      if (!el.classList.contains("qty")) return;
+      const clean = el.value.replace(/\D/g, "").slice(0, 6);
+      if (el.value !== clean) el.value = clean;
+      const sku = Number(el.dataset.sku);
+      const box = Number(el.dataset.box);
+      state.qty[sku][box] = clean;
+      updateTotals();
+    });
+
+    fillTimeOptions();
+    renderTable();
+  </script>
+</body>
+</html>
