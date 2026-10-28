@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>查看下单信息</title>
+  <style>
+    :root {
+      --teal: #83cfd9;
+      --teal-dark: #5eb8c4;
+      --text: #303133;
+      --label: #606266;
+      --muted: #909399;
+      --line: #e8eaec;
+      --border: #dcdfe6;
+      --header: #f8f8f9;
+      --page: #f0f2f5;
+      --green: #8bd886;
+      --danger: #f56c6c;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      background: var(--page);
+      color: var(--text);
+      font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "WenQuanYi Micro Hei", "Droid Sans Fallback", sans-serif;
+      font-size: 13px;
+      line-height: 1.4;
+    }
+    button { font-family: inherit; }
+    .page {
+      background: #fff;
+      min-height: 100vh;
+      margin: 10px;
+      padding: 14px 16px 64px;
+      min-width: 1180px;
+    }
+    h1 {
+      margin: 2px 0 14px;
+      text-align: center;
+      font-size: 16px;
+      font-weight: 500;
+    }
+    .sec-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 2px;
+      border: 0;
+      background: transparent;
+      color: var(--text);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+    .chev { display: block; transition: transform .15s ease; }
+    .sec-toggle[aria-expanded="false"] .chev { transform: rotate(-90deg); }
+    .sec-body { padding: 2px 0 10px; }
+    .basic {
+      display: grid;
+      grid-template-columns: 148px minmax(0, 1fr);
+      align-items: center;
+      padding: 6px 8px 12px;
+    }
+    .avatar { width: 72px; height: 72px; display: block; }
+    .fields {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      column-gap: 18px;
+      row-gap: 16px;
+    }
+    .field { display: flex; align-items: center; gap: 8px; min-width: 0; min-height: 22px; }
+    .lab { color: var(--label); white-space: nowrap; flex: none; }
+    .val { color: var(--text); min-width: 0; }
+    .ellipsis {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .tabs {
+      display: flex;
+      gap: 28px;
+      border-bottom: 1px solid var(--line);
+      padding: 0 4px;
+      margin: 4px 0 8px;
+    }
+    .tab {
+      position: relative;
+      border: 0;
+      background: transparent;
+      color: var(--label);
+      font-size: 13px;
+      padding: 8px 2px 10px;
+      cursor: pointer;
+    }
+    .tab.on { color: var(--teal-dark); }
+    .tab.on::after {
+      content: "";
+      position: absolute;
+      left: 0; right: 0; bottom: -1px;
+      height: 2px;
+      background: var(--teal);
+    }
+    .sub {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 14px 0 8px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .bar { width: 3px; height: 14px; background: var(--teal); border-radius: 1px; flex: none; }
+    .seg { display: inline-flex; margin: 2px 0 10px; }
+    .seg button {
+      height: 26px;
+      padding: 0 12px;
+      border: 1px solid var(--border);
+      background: #fff;
+      color: var(--label);
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .seg button + button { margin-left: -1px; }
+    .seg button.on {
+      background: var(--teal);
+      border-color: var(--teal);
+      color: #fff;
+      position: relative;
+      z-index: 1;
+    }
+    .table-wrap { overflow-x: auto; }
+    table {
+      border-collapse: collapse;
+      min-width: max-content;
+      width: 100%;
+      font-size: 12px;
+      color: var(--label);
+    }
+    th, td {
+      border: 1px solid var(--line);
+      height: 36px;
+      padding: 0 8px;
+      text-align: center;
+      white-space: nowrap;
+      font-weight: 400;
+    }
+    thead th { background: var(--header); color: #606266; height: 40px; }
+    td.left, th.left { text-align: left; }
+    .color-cell { text-align: left; line-height: 1.45; vertical-align: middle; padding-left: 10px; }
+    .color-cell b { display: block; font-weight: 400; color: #606266; }
+    tr.total td { background: #fafbfc; color: #303133; }
+    .tip { display: inline-flex; vertical-align: -2px; margin-left: 2px; cursor: help; }
+    .empty {
+      text-align: center;
+      color: #c0c4cc;
+      font-size: 12px;
+      padding: 14px 8px 18px;
+      border-bottom: 1px solid #f2f3f5;
+    }
+    .ship-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 28px;
+      align-items: center;
+      padding: 8px 4px 10px;
+      font-size: 13px;
+    }
+    .ship-bar b { font-weight: 500; color: var(--text); }
+    .tag {
+      display: inline-block;
+      margin-left: 6px;
+      padding: 0 8px;
+      height: 18px;
+      line-height: 18px;
+      border-radius: 9px;
+      background: var(--green);
+      color: #fff;
+      font-size: 12px;
+      font-weight: 400;
+      vertical-align: 1px;
+    }
+    .danger { color: var(--danger); }
+    .panel[hidden] { display: none; }
+    .placeholder {
+      min-height: 220px;
+      display: grid;
+      place-items: center;
+      color: #c0c4cc;
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <h1>查看下单信息</h1>
+
+    <section>
+      <button type="button" class="sec-toggle" aria-expanded="true" aria-controls="basic-body">
+        <svg class="chev" width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.2 4.1L6 7.9l3.8-3.8" fill="none" stroke="#83cfd9" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        基础信息
+      </button>
+      <div class="sec-body" id="basic-body">
+        <div class="basic">
+          <img class="avatar" alt="" src="data:image/png;base64,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">
+          <div class="fields">
+            <div class="field"><span class="lab">采购单号</span><span class="val">PO2607140015</span></div>
+            <div class="field"><span class="lab">款号</span><span class="val">AAMUT0008</span></div>
+            <div class="field"><span class="lab">下单数量</span><span class="val">4</span></div>
+            <div class="field"><span class="lab">采购名称</span><span class="val ellipsis" title="AAMUT0008-20260714-ZDY-...">AAMUT0008-20260714-ZDY-...</span></div>
+
+            <div class="field"><span class="lab">合作模式</span><span class="val">FOB</span></div>
+            <div class="field"><span class="lab">需求名称</span><span class="val ellipsis" title="RC-US-人鱼10色眼影盘套盒...">RC-US-人鱼10色眼影盘套盒...</span></div>
+            <div class="field"><span class="lab">订单类型</span><span class="val">新品首单紧急</span></div>
+            <div class="field"><span class="lab">供应商</span><span class="val">*****</span></div>
+
+            <div class="field"><span class="lab">采购类型</span><span class="val">生产采购</span></div>
+            <div class="field"><span class="lab">仓库</span><span class="val">义乌仓</span></div>
+            <div class="field"><span class="lab">跟单员</span><span class="val">覃士鹏</span></div>
+            <div class="field"><span class="lab">生产状态</span><span class="val">已完结</span></div>
+
+            <div class="field"><span class="lab">面料采购状态</span><span class="val">已完结</span></div>
+            <div class="field"><span class="lab">BOM面料版本</span><span class="val">V2</span></div>
+            <div class="field"><span class="lab">采购备注</span><span class="val">123131</span></div>
+            <div class="field"><span class="lab">供应链公司</span><span class="val ellipsis" title="义乌市织孚供应链管理有限公司...">义乌市织孚供应链管理有限公司...</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="tabs" role="tablist">
+      <button type="button" class="tab on" role="tab" aria-selected="true" data-tab="buy">采购信息</button>
+      <button type="button" class="tab" role="tab" aria-selected="false" data-tab="prod">生产资料</button>
+      <button type="button" class="tab" role="tab" aria-selected="false" data-tab="qc">质检查询</button>
+    </div>
+
+    <div class="panel" id="panel-buy">
+      <section>
+        <button type="button" class="sec-toggle" aria-expanded="true" aria-controls="lines-body">
+          <svg class="chev" width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.2 4.1L6 7.9l3.8-3.8" fill="none" stroke="#83cfd9" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          下单明细
+        </button>
+        <div class="sec-body" id="lines-body">
+          <div class="seg" role="group" aria-label="展示方式">
+            <button type="button" class="on" id="modeSku">按SKU竖向展示</button>
+            <button type="button" id="modeSize">按尺码横向展示</button>
+          </div>
+          <div class="table-wrap">
+            <table id="orderTable"></table>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <button type="button" class="sec-toggle" aria-expanded="true" aria-controls="mat-body">
+          <svg class="chev" width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.2 4.1L6 7.9l3.8-3.8" fill="none" stroke="#83cfd9" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          物料采购信息
+        </button>
+        <div class="sec-body" id="mat-body">
+          <h3 class="sub"><i class="bar"></i>面料</h3>
+          <div class="table-wrap">
+            <table>
+              <thead><tr id="fabricHead"></tr></thead>
+            </table>
+          </div>
+          <div class="empty">没有更多数据了！</div>
+
+          <h3 class="sub"><i class="bar"></i>辅料</h3>
+          <div class="table-wrap">
+            <table>
+              <thead><tr id="trimHead"></tr></thead>
+            </table>
+          </div>
+          <div class="empty">没有更多数据了！</div>
+
+          <h3 class="sub"><i class="bar"></i>物料发货信息</h3>
+          <div class="table-wrap">
+            <table>
+              <thead><tr id="shipHead"></tr></thead>
+            </table>
+          </div>
+          <div class="empty">没有更多数据了！</div>
+        </div>
+      </section>
+
+      <h3 class="sub"><i class="bar"></i>成衣送货信息</h3>
+      <div class="ship-bar">
+        <span><b>发货单号：</b>PO2607140015-0714001<span class="tag">采购发货</span></span>
+        <span><b>发货数：</b>4</span>
+        <span><b>入库数：</b>4</span>
+        <span><b>返工数：</b><span class="danger">0</span></span>
+        <span><b>预约送达时间：</b>2026-07-14 21:00:00</span>
+        <span><b>仓库确认入送达时间：</b>2026-07-14 21:00:00</span>
+      </div>
+      <div class="table-wrap">
+        <table id="deliveryTable"></table>
+      </div>
+    </div>
+
+    <div class="panel" id="panel-prod" hidden>
+      <h3 class="sub"><i class="bar"></i>纸样</h3>
+      <div class="placeholder">没有更多数据了！</div>
+      <h3 class="sub"><i class="bar"></i>工艺单</h3>
+      <div class="placeholder">没有更多数据了！</div>
+    </div>
+
+    <div class="panel" id="panel-qc" hidden>
+      <h3 class="sub"><i class="bar"></i>质检记录</h3>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>质检单号</th><th>质检类型</th><th>质检结果</th><th>质检员</th><th>质检时间</th><th>备注</th>
+            </tr>
+          </thead>
+        </table>
+      </div>
+      <div class="placeholder">没有更多数据了！</div>
+    </div>
+  </div>
+
+  <script>
+    const TIP = '<span class="tip" title="说明"><svg width="13" height="13" viewBox="0 0 13 13" aria-hidden="true"><circle cx="6.5" cy="6.5" r="6" fill="#606060"/><text x="6.5" y="9.4" text-anchor="middle" font-size="8.5" font-family="sans-serif" fill="#fff">?</text></svg></span>';
+
+    const GROUPS = [
+      {
+        color: "驼色", skc: "AAMUT0008-CA", price: "6666",
+        req: "2026-07-31 00:00:00", accept: "2026-07-31 16:41:27",
+        skus: ["S", "M"].map((size) => ({
+          sku: "AAMUT0008-CA-" + size, size: size,
+          order: 1, wip: 0, skuCut: "-", skcCut: "-", cut: 1, diff: "-", ratio: "-",
+          ship: 1, inbound: 1, repair: 0, wrong: 0, sample: 0
+        }))
+      },
+      {
+        color: "橙色", skc: "AAMUT0008-BR", price: "6666",
+        req: "2026-07-31 00:00:00", accept: "2026-07-31 16:41:27",
+        skus: ["S", "M"].map((size) => ({
+          sku: "AAMUT0008-BR-" + size, size: size,
+          order: 1, wip: 0, skuCut: "-", skcCut: "-", cut: 1, diff: "-", ratio: "-",
+          ship: 1, inbound: 1, repair: 0, wrong: 0, sample: 0
+        }))
+      }
+    ];
+
+    const DELIVERY = [
+      { color: "驼色", skc: "AAMUT0008-CA", skus: ["S", "M"] },
+      { color: "橙色", skc: "AAMUT0008-BR", skus: ["S", "M"] }
+    ];
+
+    function th(label, tip) {
+      return "<th>" + label + (tip ? TIP : "") + "</th>";
+    }
+
+    function renderVertical() {
+      let html = "<thead><tr>";
+      ["颜色/SKC", "SKU", "下单数量", "在产数量"].forEach((n) => { html += th(n); });
+      html += th("SKU预裁数", true) + th("SKC预裁数", true) + th("裁剪数") + th("差异数量", true);
+      html += th("裁剪数与预裁数(差异比例%)", true);
+      ["发货数量", "入库数", "返修数", "错码入库数", "拍摄样领取数", "采购单价", "要求回货日期", "目标尾次验收日期"].forEach((n) => { html += th(n); });
+      html += "</tr></thead><tbody>";
+      GROUPS.forEach((g) => {
+        g.skus.forEach((s, i) => {
+          html += "<tr>";
+          if (i === 0) {
+            html += '<td class="color-cell" rowspan="2"><b>' + g.color + "</b>" + g.skc + "</td>";
+          }
+          html += '<td class="left">' + s.sku + "</td>";
+          html += "<td>" + s.order + "</td><td>" + s.wip + "</td><td>" + s.skuCut + "</td><td>" + s.skcCut + "</td>";
+          html += "<td>" + s.cut + "</td><td>" + s.diff + "</td><td>" + s.ratio + "</td>";
+          html += "<td>" + s.ship + "</td><td>" + s.inbound + "</td><td>" + s.repair + "</td><td>" + s.wrong + "</td><td>" + s.sample + "</td>";
+          if (i === 0) {
+            html += "<td>" + g.price + "</td><td>" + g.req + "</td><td>" + g.accept + "</td>";
+          } else {
+            html += "<td></td><td></td><td></td>";
+          }
+          html += "</tr>";
+        });
+      });
+      html += '<tr class="total"><td class="left" colspan="2">合计：</td>';
+      html += "<td>4</td><td>0</td><td>-</td><td>-</td><td>4</td><td>0</td><td>-</td>";
+      html += "<td>4</td><td>4</td><td>0</td><td>0</td><td>0</td><td></td><td></td><td></td></tr>";
+      html += "</tbody>";
+      document.getElementById("orderTable").innerHTML = html;
+    }
+
+    function renderHorizontal() {
+      let html = "<thead><tr>";
+      html += th("颜色/SKC");
+      ["下单数量 S", "下单数量 M", "在产数量 S", "在产数量 M", "发货数量 S", "发货数量 M", "入库数 S", "入库数 M", "采购单价", "要求回货日期", "目标尾次验收日期"].forEach((n) => { html += th(n); });
+      html += "</tr></thead><tbody>";
+      GROUPS.forEach((g) => {
+        const by = Object.fromEntries(g.skus.map((s) => [s.size, s]));
+        html += '<tr><td class="color-cell"><b>' + g.color + "</b>" + g.skc + "</td>";
+        html += "<td>" + by.S.order + "</td><td>" + by.M.order + "</td>";
+        html += "<td>" + by.S.wip + "</td><td>" + by.M.wip + "</td>";
+        html += "<td>" + by.S.ship + "</td><td>" + by.M.ship + "</td>";
+        html += "<td>" + by.S.inbound + "</td><td>" + by.M.inbound + "</td>";
+        html += "<td>" + g.price + "</td><td>" + g.req + "</td><td>" + g.accept + "</td></tr>";
+      });
+      html += '<tr class="total"><td class="left">合计：</td><td>2</td><td>2</td><td>0</td><td>0</td><td>2</td><td>2</td><td>2</td><td>2</td><td></td><td></td><td></td></tr>';
+      html += "</tbody>";
+      document.getElementById("orderTable").innerHTML = html;
+    }
+
+    function renderDelivery() {
+      let html = "<thead><tr>";
+      ["颜色/SKC", "SKU", "下单数量", "发货数量", "入库数量", "返工数量", "签收时间", "入库时间"].forEach((n) => { html += th(n); });
+      html += "</tr></thead><tbody>";
+      DELIVERY.forEach((g) => {
+        g.skus.forEach((size, i) => {
+          html += "<tr>";
+          if (i === 0) html += '<td class="color-cell" rowspan="2"><b>' + g.color + "</b>" + g.skc + "</td>";
+          html += '<td class="left">' + g.skc + "-" + size + "</td>";
+          html += "<td>1</td><td>1</td><td>1</td><td>0</td>";
+          html += "<td>2026-07-14 16:58:43</td><td>2026-07-14 17:20:13</td></tr>";
+        });
+      });
+      html += "</tbody>";
+      document.getElementById("deliveryTable").innerHTML = html;
+    }
+
+    function fillHead(id, cols) {
+      document.getElementById(id).innerHTML = cols.map((c) => "<th>" + c + "</th>").join("");
+    }
+
+    fillHead("fabricHead", ["颜色/SKC编码", "物料项目", "图片", "物料分类", "物料供应商", "物料拼接名称", "采购价", "采购数", "发货数", "验收数量", "面料验收米数", "退货数量", "公司预裁数", "退货预裁数", "单件用量", "实际平均用量", "面料损耗%", "签收时间", "批色时间"]);
+    fillHead("trimHead", ["颜色/SKC编码", "物料项目", "图片", "物料分类", "物料拼接名称", "采购价", "采购数", "发货数", "验收数量", "退货数量", "退货预裁数", "单件用量", "实际平均用量", "面料损耗%", "签收时间", "批色时间", "面料验收时间", "实际发料日期", "预计发料日期"]);
+    fillHead("shipHead", ["发货单号", "码单", "颜色/SKC编码", "物料供应商", "物料类型", "物料拼接名称", "采购数", "发货数", "验收数量", "送货数量", "签收时间", "批色时间"]);
+
+    document.querySelectorAll(".sec-toggle").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const open = btn.getAttribute("aria-expanded") === "true";
+        btn.setAttribute("aria-expanded", open ? "false" : "true");
+        document.getElementById(btn.getAttribute("aria-controls")).hidden = open;
+      });
+    });
+
+    document.querySelectorAll(".tab").forEach((tab) => {
+      tab.addEventListener("click", () => {
+        document.querySelectorAll(".tab").forEach((t) => {
+          const on = t === tab;
+          t.classList.toggle("on", on);
+          t.setAttribute("aria-selected", on ? "true" : "false");
+        });
+        document.querySelectorAll(".panel").forEach((p) => {
+          p.hidden = p.id !== "panel-" + tab.dataset.tab;
+        });
+      });
+    });
+
+    const modeSku = document.getElementById("modeSku");
+    const modeSize = document.getElementById("modeSize");
+    modeSku.addEventListener("click", () => {
+      modeSku.classList.add("on");
+      modeSize.classList.remove("on");
+      renderVertical();
+    });
+    modeSize.addEventListener("click", () => {
+      modeSize.classList.add("on");
+      modeSku.classList.remove("on");
+      renderHorizontal();
+    });
+
+    renderVertical();
+    renderDelivery();
+  </script>
+</body>
+</html>
